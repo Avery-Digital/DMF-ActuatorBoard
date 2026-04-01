@@ -1,0 +1,17 @@
+# Datasheets - large binary files, do not track
+datasheets/
+
+# STM32CubeIDE build artifacts
+Debug/
+Release/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.su
+
+# IDE settings (optional - remove if you want to track these)
+.settings/
