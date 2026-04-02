@@ -73,11 +73,11 @@ All pins are push-pull output, no pull, low speed. **Inverse logic:** GPIO LOW =
 | 23       | PB8  | 64      | U6         |                 |
 | 24       | PB6  | 61      | U6         |                 |
 | 25       | PC1  | 14      | U7         |                 |
-| 26       | --   | --      | U7         | Not assigned    |
-| 27       | --   | --      | U7         | Not assigned    |
+| 26       | PA1  | 18      | U7         |                 |
+| 27       | PA0  | 17      | U7         |                 |
 | 28       | PC0  | 13      | U7         |                 |
 
-Actuators 26 and 27 have no GPIO assignment (their `PinConfig` entries have `port = NULL`). The firmware skips them in all bulk operations.
+All 28 actuators have GPIO assignments. Actuators are numbered 1--28.
 
 ---
 
@@ -242,6 +242,169 @@ All commands use the 16-bit code `CMD_CODE(cmd1, cmd2) = (cmd1 << 8) | cmd2`.
 | `0x03` | STATUS_INVALID_VAL| Invalid value                  |
 
 Unrecognized commands are silently ignored (no response sent).
+
+### Detailed Packet Examples
+
+For a software engineer integrating with this board, here is the exact byte-level structure for every command. All values are hexadecimal. Byte stuffing is omitted for clarity — in practice, any `0x02`, `0x7E`, or `0x2D` in the payload/CRC bytes must be escaped.
+
+**Notation:**
+- `→` = sent to actuator board
+- `←` = returned from actuator board
+- `[s1]` = status1 (always `0x00`)
+- `[s2]` = status2 (`0x00`=OK, `0x01`=error, `0x02`=invalid ID)
+- `bid` = boardID (echoed from request)
+- Fields in `()` are computed: msg IDs are echoed, CRC is over header+payload
+
+---
+
+#### CMD_PING (0xDEAD)
+
+```
+→ [02] [m1] [m2] [00] [00] [DE] [AD] [CRC_hi] [CRC_lo] [7E]
+          msg IDs    len=0   cmd=DEAD
+
+← [02] [m1] [m2] [00] [08] [DE] [AD] [DE AD BE EF 01 02 03 04] [CRC_hi] [CRC_lo] [7E]
+          msg IDs    len=8   cmd=DEAD   fixed 8-byte test payload
+```
+
+No payload in request. Response is always the same 8 bytes.
+
+---
+
+#### CMD_GET_BOARD_TYPE (0x0B99)
+
+```
+→ [02] [m1] [m2] [00] [01] [0B] [99] [bid] [CRC_hi] [CRC_lo] [7E]
+                   len=1              boardID
+
+← [02] [m1] [m2] [00] [05] [0B] [99] [00] [00] [bid] [41] [42] [CRC_hi] [CRC_lo] [7E]
+                   len=5               s1   s2   bid   'A'  'B'
+```
+
+Board identity is `0x41 0x42` ("AB" = Actuator Board).
+
+---
+
+#### CMD_GET_FW_VERSION (0x0F98)
+
+```
+→ [02] [m1] [m2] [00] [01] [0F] [98] [bid] [CRC_hi] [CRC_lo] [7E]
+
+← [02] [m1] [m2] [00] [12] [0F] [98] [00] [00] [bid] [41 43 54 5F 42 52 44 20 76 31 2E 30 2E 30] [CRC] [7E]
+                   len=18              s1   s2   bid   "ACT_BRD v1.0.0" (15 ASCII bytes)
+```
+
+---
+
+#### CMD_ACT_ENABLE (0x0F10)
+
+```
+→ [02] [m1] [m2] [00] [01] [0F] [10] [bid] [CRC_hi] [CRC_lo] [7E]
+                   len=1              boardID
+
+← [02] [m1] [m2] [00] [03] [0F] [10] [00] [00] [bid] [CRC_hi] [CRC_lo] [7E]
+                   len=3               s1   s2   bid
+```
+
+Sets PD2 HIGH → all L293Q drivers enabled. Response confirms success.
+
+---
+
+#### CMD_ACT_DISABLE (0x0F11)
+
+```
+→ [02] [m1] [m2] [00] [01] [0F] [11] [bid] [CRC_hi] [CRC_lo] [7E]
+
+← [02] [m1] [m2] [00] [03] [0F] [11] [00] [00] [bid] [CRC_hi] [CRC_lo] [7E]
+                   len=3               s1   s2   bid
+```
+
+Sets PD2 LOW → all L293Q drivers disabled.
+
+---
+
+#### CMD_ACT_GET_ENABLE (0x0F12)
+
+```
+→ [02] [m1] [m2] [00] [01] [0F] [12] [bid] [CRC_hi] [CRC_lo] [7E]
+
+← [02] [m1] [m2] [00] [04] [0F] [12] [00] [00] [bid] [en] [CRC_hi] [CRC_lo] [7E]
+                   len=4               s1   s2   bid   enabled (0x01=yes, 0x00=no)
+```
+
+---
+
+#### CMD_ACT_SET (0x0F00) — Set Single Actuator
+
+```
+→ [02] [m1] [m2] [00] [03] [0F] [00] [bid] [act_id] [state] [CRC_hi] [CRC_lo] [7E]
+                   len=3              boardID  1-28    0x01=ON, 0x00=OFF
+
+← [02] [m1] [m2] [00] [05] [0F] [00] [00] [s2] [bid] [act_id] [actual] [CRC_hi] [CRC_lo] [7E]
+                   len=5               s1   s2   bid   act_id   actual GPIO state
+```
+
+`actual` is read back from the GPIO after setting — confirms the physical state.
+`s2` = `0x02` (STATUS_INVALID_ID) if `act_id` is out of range (not 1-28) or unassigned.
+
+---
+
+#### CMD_ACT_GET (0x0F01) — Get Single Actuator State
+
+```
+→ [02] [m1] [m2] [00] [02] [0F] [01] [bid] [act_id] [CRC_hi] [CRC_lo] [7E]
+                   len=2              boardID  1-28
+
+← [02] [m1] [m2] [00] [04] [0F] [01] [00] [s2] [bid] [state] [CRC_hi] [CRC_lo] [7E]
+                   len=4               s1   s2   bid   0x01=ON, 0x00=OFF
+```
+
+---
+
+#### CMD_ACT_SET_ALL (0x0F02) — Set All Actuators from Bitmask
+
+```
+→ [02] [m1] [m2] [00] [05] [0F] [02] [bid] [b0] [b1] [b2] [b3] [CRC_hi] [CRC_lo] [7E]
+                   len=5              boardID  32-bit LE bitmask
+
+← [02] [m1] [m2] [00] [03] [0F] [02] [00] [00] [bid] [CRC_hi] [CRC_lo] [7E]
+                   len=3               s1   s2   bid
+```
+
+Bitmask is little-endian: bit 0 of b0 = actuator 1, bit 3 of b3 = actuator 28.
+Example: turn on actuators 1, 3, 5 → mask = 0x00000015 → b0=0x15, b1=0x00, b2=0x00, b3=0x00.
+
+---
+
+#### CMD_ACT_GET_ALL (0x0F03) — Get All Actuator States
+
+```
+→ [02] [m1] [m2] [00] [01] [0F] [03] [bid] [CRC_hi] [CRC_lo] [7E]
+
+← [02] [m1] [m2] [00] [07] [0F] [03] [00] [00] [bid] [b0] [b1] [b2] [b3] [CRC_hi] [CRC_lo] [7E]
+                   len=7               s1   s2   bid   32-bit LE bitmask
+```
+
+Same bitmask format as SET_ALL.
+
+---
+
+#### CMD_ACT_CLEAR_ALL (0x0F04) — Turn All Actuators OFF
+
+```
+→ [02] [m1] [m2] [00] [01] [0F] [04] [bid] [CRC_hi] [CRC_lo] [7E]
+
+← [02] [m1] [m2] [00] [03] [0F] [04] [00] [00] [bid] [CRC_hi] [CRC_lo] [7E]
+                   len=3               s1   s2   bid
+```
+
+Sets all 28 actuator GPIOs to HIGH (OFF in inverse logic).
+
+---
+
+### Response Flow Documentation
+
+For a detailed trace of how commands travel from the PC through the motherboard to the actuator board and back, see [docs/response_flow.md](docs/response_flow.md).
 
 ---
 

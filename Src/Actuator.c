@@ -58,8 +58,8 @@ static const PinConfig act_pins[ACT_COUNT] = {
     /* Act 23 — PB8  (pin 64) */ ACT_PIN(B,  8),
     /* Act 24 — PB6  (pin 61) */ ACT_PIN(B,  6),
     /* Act 25 — PC1  (pin 14) */ ACT_PIN(C,  1),
-    /* Act 26 — (not assigned) */ {0},
-    /* Act 27 — (not assigned) */ {0},
+    /* Act 26 — PA1  (pin 18) */ ACT_PIN(A,  1),
+    /* Act 27 — PA0  (pin 17) */ ACT_PIN(A,  0),
     /* Act 28 — PC0  (pin 13) */ ACT_PIN(C,  0),
 };
 

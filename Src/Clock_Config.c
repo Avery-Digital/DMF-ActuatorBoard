@@ -60,12 +60,28 @@ void MCU_Init(void)
 
     /* ---- Flash latency ---- */
     LL_FLASH_SetLatency(sys_clk_config.flash_latency);
-    while (LL_FLASH_GetLatency() != sys_clk_config.flash_latency);
+    {
+        volatile uint32_t timeout = 100000U;
+        while ((LL_FLASH_GetLatency() != sys_clk_config.flash_latency) && (--timeout));
+        if (timeout == 0U) Error_Handler(0x07);
+    }
 
     /* ---- Power: SMPS + LDO, VOS0 for 480 MHz ---- */
     LL_PWR_ConfigSupply(LL_PWR_SMPS_2V5_SUPPLIES_LDO);
+
+    /* Wait for supply to settle before requesting VOS0.
+     * On cold power-on the regulator needs time to stabilize. */
+    {
+        volatile uint32_t settle = 50000U;
+        while (settle--);
+    }
+
     LL_PWR_SetRegulVoltageScaling(sys_clk_config.voltage_scale);
-    while (!LL_PWR_IsActiveFlag_VOS());
+    {
+        volatile uint32_t timeout = 1000000U;
+        while ((!LL_PWR_IsActiveFlag_VOS()) && (--timeout));
+        if (timeout == 0U) Error_Handler(0x08);
+    }
 }
 
 /* ==========================================================================
