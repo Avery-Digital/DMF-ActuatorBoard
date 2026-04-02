@@ -411,7 +411,7 @@ For a detailed trace of how commands travel from the PC through the motherboard 
 ## Boot Sequence
 
 1. **`SystemInit()`** (startup_stm32h735rgvx.s) -- FPU enable, RCC reset to defaults
-2. **`MCU_Init()`** -- WWDG disable, DMA flag clear, MPU config (background region), SYSCFG clock, NVIC priority group 4, flash latency 4 WS, power supply (SMPS+LDO, VOS0)
+2. **`MCU_Init()`** -- WWDG disable, DMA flag clear, MPU config (background region), SYSCFG clock, NVIC priority group 4, flash latency 4 WS (with 100k-count timeout, error `0x07`), power supply (SMPS+LDO with 50k-count settle delay, then VOS0 request with 1M-count timeout, error `0x08`). The settle delay and timeouts were added to fix a cold power-on hang where VOS0 was requested before the SMPS+LDO supply had stabilized.
 3. **`ClockTree_Init()`** -- HSI already running; configure and enable PLL1 (480 MHz SYSCLK), set bus prescalers, configure and enable PLL2 (128 MHz USART clock)
 4. **`LL_Init1msTick()` + `LL_SYSTICK_EnableIT()`** -- 1 ms SysTick interrupt
 5. **`Actuator_Init()`** -- Init PD2 enable pin (LOW = disabled), init 28 actuator GPIOs (HIGH = OFF)
@@ -491,3 +491,21 @@ All priorities use group 4 (4 bits preemption, 0 bits sub-priority).
 | USART2             | 5        | IDLE line detection             |
 | DMA1 Stream 0 (TX)| 6        | USART2 TX DMA complete          |
 | SysTick            | 15       | 1 ms tick (lowest priority)     |
+
+---
+
+## Error Codes
+
+`Error_Handler(fault_code)` halts the MCU. Fault codes identify the failure point.
+
+| Code   | Source                          | Description                                  |
+|--------|---------------------------------|----------------------------------------------|
+| `0x01` | `ClockTree_Init()`             | HSI not ready                                |
+| `0x02` | `ClockTree_Init()`             | PLL1 did not disable                         |
+| `0x03` | `ClockTree_Init()`             | PLL1 did not lock                            |
+| `0x04` | `ClockTree_Init()`             | SYSCLK did not switch to PLL1                |
+| `0x05` | `ClockTree_Init()`             | PLL2 did not disable                         |
+| `0x06` | `ClockTree_Init()`             | PLL2 did not lock                            |
+| `0x07` | `MCU_Init()`                   | Flash latency did not apply (100k timeout)   |
+| `0x08` | `MCU_Init()`                   | VOS0 flag not set after power supply settle (1M timeout) |
+| `0x11` | `main()` init sequence         | USART driver init failed                     |
