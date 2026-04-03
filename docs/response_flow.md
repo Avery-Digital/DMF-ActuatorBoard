@@ -27,9 +27,9 @@ The GUI calls `sendActCommand()` which builds a framed packet:
 [SOF 0x02] [msg1] [msg2] [len_hi] [len_lo] [cmd1] [cmd2] [payload...] [CRC_hi] [CRC_lo] [EOF 0x7E]
 ```
 
-Example — Enable command for boardID 1:
+Example — Enable command for boardID 0:
 ```
-Payload: [0x01]              (boardID = 1)
+Payload: [0x00]              (boardID = 0, 0-based)
 Command: cmd1=0x0F, cmd2=0x10  (CMD_ACT_ENABLE = 0x0F10)
 ```
 
@@ -84,7 +84,7 @@ if (act_forward_request.pending) {
 }
 ```
 
-`ACT_GetHandle(1)` returns `&act1_handle` (UART5), `ACT_GetHandle(2)` returns `&act2_handle` (USART6).
+`ACT_GetHandle(0)` returns `&act1_handle` (UART5), `ACT_GetHandle(1)` returns `&act2_handle` (USART6). BoardID is 0-based.
 
 `Act_Uart_SendPacket()`:
 1. Calls `Protocol_BuildPacket()` to frame the packet (SOF + byte-stuffed header/payload/CRC + EOF)
@@ -155,7 +155,7 @@ static void Command_HandleActEnable(const PacketHeader *header,
 {
     uint8_t bid = GetBoardID(payload, header->length);  // payload[0] = boardID
     Actuator_Enable();                                   // PD2 → HIGH
-    uint8_t r[3] = { STATUS_OK, STATUS_OK, bid };       // [0x00][0x00][boardID]
+    uint8_t r[3] = { STATUS_CAT_OK, STATUS_CAT_OK, bid }; // [0x00][0x00][boardID]
     TxReply(header, r, 3);                               // populate tx_request
 }
 ```
@@ -307,7 +307,7 @@ Typical round-trip for a simple command (e.g. ACT_ENABLE):
 
 1. **Button not wired** — Designer missing `.Click +=` event handler subscription
 2. **Wrong command code** — GUI sends a code the actuator doesn't recognize (silently ignored)
-3. **BoardID mismatch** — GUI sends boardID 0 but actuator expects 1 or 2
+3. **BoardID mismatch** — GUI sends wrong boardID (boardID is 0-based: 0, 1)
 4. **RS485 direction stuck** — DE pin not toggling, transceiver stuck in TX or RX mode
 5. **DMA TX busy** — `tx_busy` still true from previous send, `SendPacket()` returns `INIT_ERR_DMA`
 6. **tx_request overwritten** — A second command arrives before the main loop processes the first response, overwriting `tx_request`
@@ -348,7 +348,7 @@ typedef struct {
     uint8_t         msg1, msg2, cmd1, cmd2;
     uint8_t         payload[4096];
     uint16_t        length;
-    uint8_t         board_id;       // 1 → UART5 (ACT1), 2 → USART6 (ACT2)
+    uint8_t         board_id;       // 0 → UART5 (ACT1), 1 → USART6 (ACT2), 0-based
 } ActForwardRequest;
 ```
 

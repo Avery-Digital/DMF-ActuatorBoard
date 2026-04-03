@@ -52,19 +52,41 @@ extern "C" {
 /* Firmware version — update on each release */
 #define FW_VERSION_MAJOR    1U
 #define FW_VERSION_MINOR    0U
-#define FW_VERSION_PATCH    0U
+#define FW_VERSION_PATCH    1U
 
 /* Board identity */
 #define BOARD_ID_BYTE1      0x41U   /* 'A' = Actuator Board */
 #define BOARD_ID_BYTE2      0x42U   /* 'B' */
 #define BOARD_ID_SELF       0xFFU   /* Default boardID when talking standalone */
 
-/* ========================= Response Status Codes ========================== */
+/* ========================= Response Status Codes ========================== *
+ *
+ *  Response format: [status1 = category] [status2 = code] [boardID] [data...]
+ *  Both 0x00 = success.  Non-zero = error.
+ *
+ *  Unified error table across all boards:
+ *    Category 0x01 = General         0x05 = Load Switch (MB)
+ *    Category 0x02 = Switch Matrix   0x06 = ADC/Sensor (MB)
+ *    Category 0x03 = HVSG/PWM (DB)   0x07 = Actuator (ACT)
+ *    Category 0x04 = PMU/INA228 (DB) 0x08 = Gantry (MB)
+ *                                    0x09 = Routing (MB)
+ * ========================================================================== */
 
-#define STATUS_OK           0x00U
-#define STATUS_ERROR        0x01U
-#define STATUS_INVALID_ID   0x02U
-#define STATUS_INVALID_VAL  0x03U
+/* Success */
+#define STATUS_CAT_OK           0x00U
+#define STATUS_CODE_OK          0x00U
+
+/* Category 0x01 — General Errors */
+#define STATUS_CAT_GENERAL      0x01U
+#define STATUS_PAYLOAD_SHORT    0x01U   /**< Payload too short                */
+#define STATUS_UNKNOWN_CMD      0x02U   /**< Unknown command                  */
+#define STATUS_NOT_SUPPORTED    0x03U   /**< Command not supported in state   */
+
+/* Category 0x07 — Actuator Errors */
+#define STATUS_CAT_ACTUATOR     0x07U
+#define STATUS_ACT_INVALID_ID   0x01U   /**< Actuator ID not 1–28            */
+#define STATUS_ACT_INVALID_VAL  0x02U   /**< Invalid value                    */
+#define STATUS_ACT_SHORT_PL     0x03U   /**< Payload too short for command    */
 
 /* ========================= Public API ===================================== */
 

@@ -70,15 +70,16 @@ void MCU_Init(void)
     LL_PWR_ConfigSupply(LL_PWR_SMPS_2V5_SUPPLIES_LDO);
 
     /* Wait for supply to settle before requesting VOS0.
-     * On cold power-on the regulator needs time to stabilize. */
+     * On cold power-on the SMPS+LDO regulator needs time to stabilize.
+     * At 64 MHz HSI (default before PLL), 1M iterations ≈ ~50 ms. */
     {
-        volatile uint32_t settle = 50000U;
+        volatile uint32_t settle = 1000000U;
         while (settle--);
     }
 
     LL_PWR_SetRegulVoltageScaling(sys_clk_config.voltage_scale);
     {
-        volatile uint32_t timeout = 1000000U;
+        volatile uint32_t timeout = 5000000U;
         while ((!LL_PWR_IsActiveFlag_VOS()) && (--timeout));
         if (timeout == 0U) Error_Handler(0x08);
     }
@@ -135,13 +136,15 @@ void ClockTree_Init(const ClockTree_Config *clk)
 
     /* ---- Switch SYSCLK to PLL1P ---- */
     LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL1);
-    timeout = 50000U;
+    timeout = 1000000U;
     while ((LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_PLL1) && (--timeout));
     if (timeout == 0U) Error_Handler(0x04);
 
-    /* ---- Wait for clock to stabilize ---- */
-    volatile uint32_t stab = 100000U;
-    while (stab--);
+    /* ---- Wait for clock to stabilize after SYSCLK switch ---- */
+    {
+        volatile uint32_t stab = 1000000U;
+        while (stab--);
+    }
 
     /* ---- Bus prescalers (final values) ---- */
     LL_RCC_SetSysPrescaler(clk->prescalers.d1cpre);

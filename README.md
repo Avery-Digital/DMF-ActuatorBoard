@@ -2,7 +2,7 @@
 
 Bare-metal firmware for the DMF (Digital Microfluidics) Actuator Board, built on the **STM32H735RGV6** (TFBGA68 package). Drives 28 actuator outputs through 8x L293Q quad half-bridge ICs, communicating with a motherboard over RS485.
 
-**Firmware version:** 1.0.0  
+**Firmware version:** 1.0.1 (see [CHANGELOG.md](CHANGELOG.md) for release history)
 **Board identity:** `0x41 0x42` ("AB" -- Actuator Board)
 
 ---
@@ -172,11 +172,11 @@ The receiver reverses this: on seeing `ESC`, read the next byte and XOR it with 
 All commands follow a uniform payload layout:
 
 **Request payload:** `[boardID] [command-specific data...]`
-- `boardID` is the first byte (default `0xFF` if omitted)
+- `boardID` is the first byte, 0-based (0, 1, ...; default `0xFF` if omitted)
 
 **Response payload:** `[status1] [status2] [boardID] [response data...]`
-- `status1`: always `STATUS_OK` (`0x00`) in current firmware
-- `status2`: operation result (`0x00`=OK, `0x01`=error, `0x02`=invalid ID, `0x03`=invalid value)
+- `status1`: status category (`0x00`=STATUS_CAT_OK, `0x01`=STATUS_CAT_ACTUATOR)
+- `status2`: status detail (`0x00`=OK, `0x01`=error, `0x02`=invalid ID, `0x03`=invalid value)
 - `boardID`: echoed from request
 
 ### DMA Reception
@@ -211,7 +211,7 @@ All commands use the 16-bit code `CMD_CODE(cmd1, cmd2) = (cmd1 << 8) | cmd2`.
 |-------------------|----------|------------------------|------------------------------------------|
 | Ping              | `0xDEAD` | (none)                 | `DE AD BE EF 01 02 03 04` (8 bytes)     |
 | Get Board Type    | `0x0B99` | `[boardID]`            | `[s1] [s2] [boardID] [0x41] [0x42]`     |
-| Get FW Version    | `0x0F98` | `[boardID]`            | `[s1] [s2] [boardID] "ACT_BRD v1.0.0"`  |
+| Get FW Version    | `0x0F98` | `[boardID]`            | `[s1] [s2] [boardID] "ACT_BRD v1.0.1"`  |
 
 ### Actuator Commands (range 0x0F00 -- 0x0FFF)
 
@@ -234,12 +234,14 @@ All commands use the 16-bit code `CMD_CODE(cmd1, cmd2) = (cmd1 << 8) | cmd2`.
 
 **Response status codes:**
 
-| Code   | Name             | Meaning                        |
-|--------|------------------|--------------------------------|
-| `0x00` | STATUS_OK        | Success                        |
-| `0x01` | STATUS_ERROR     | Generic error (e.g. short payload) |
-| `0x02` | STATUS_INVALID_ID| Actuator ID out of range or unassigned |
-| `0x03` | STATUS_INVALID_VAL| Invalid value                  |
+Status bytes use a categorized format: `[category] [detail]`.
+
+| s1 (Category) | s2 (Detail)  | Name                     | Meaning                                   |
+|----------------|-------------|--------------------------|-------------------------------------------|
+| `0x00`         | `0x00`      | STATUS_CAT_OK / OK       | Success                                   |
+| `0x01`         | `0x01`      | STATUS_CAT_ACTUATOR / ERROR | Generic actuator error (e.g. short payload) |
+| `0x01`         | `0x02`      | STATUS_CAT_ACTUATOR / INVALID_ID | Actuator ID out of range or unassigned |
+| `0x01`         | `0x03`      | STATUS_CAT_ACTUATOR / INVALID_VAL | Invalid value                        |
 
 Unrecognized commands are silently ignored (no response sent).
 
@@ -250,8 +252,8 @@ For a software engineer integrating with this board, here is the exact byte-leve
 **Notation:**
 - `→` = sent to actuator board
 - `←` = returned from actuator board
-- `[s1]` = status1 (always `0x00`)
-- `[s2]` = status2 (`0x00`=OK, `0x01`=error, `0x02`=invalid ID)
+- `[s1]` = status category (`0x00`=OK, `0x01`=actuator error)
+- `[s2]` = status detail (`0x00`=OK, `0x01`=error, `0x02`=invalid ID, `0x03`=invalid value)
 - `bid` = boardID (echoed from request)
 - Fields in `()` are computed: msg IDs are echoed, CRC is over header+payload
 
@@ -290,8 +292,8 @@ Board identity is `0x41 0x42` ("AB" = Actuator Board).
 ```
 → [02] [m1] [m2] [00] [01] [0F] [98] [bid] [CRC_hi] [CRC_lo] [7E]
 
-← [02] [m1] [m2] [00] [12] [0F] [98] [00] [00] [bid] [41 43 54 5F 42 52 44 20 76 31 2E 30 2E 30] [CRC] [7E]
-                   len=18              s1   s2   bid   "ACT_BRD v1.0.0" (15 ASCII bytes)
+← [02] [m1] [m2] [00] [12] [0F] [98] [00] [00] [bid] [41 43 54 5F 42 52 44 20 76 31 2E 30 2E 31] [CRC] [7E]
+                   len=18              s1   s2   bid   "ACT_BRD v1.0.1" (15 ASCII bytes)
 ```
 
 ---
@@ -345,7 +347,7 @@ Sets PD2 LOW → all L293Q drivers disabled.
 ```
 
 `actual` is read back from the GPIO after setting — confirms the physical state.
-`s2` = `0x02` (STATUS_INVALID_ID) if `act_id` is out of range (not 1-28) or unassigned.
+`s2` = `0x02` (INVALID_ID) if `act_id` is out of range (not 1-28) or unassigned. In that case `s1` = `0x01` (STATUS_CAT_ACTUATOR).
 
 ---
 

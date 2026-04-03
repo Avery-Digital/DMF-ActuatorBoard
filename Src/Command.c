@@ -68,7 +68,7 @@ static void Command_HandleGetBoardType(const PacketHeader *header,
                                        const uint8_t *payload)
 {
     uint8_t bid = GetBoardID(payload, header->length);
-    uint8_t r[5] = { STATUS_OK, STATUS_OK, bid, BOARD_ID_BYTE1, BOARD_ID_BYTE2 };
+    uint8_t r[5] = { STATUS_CAT_OK, STATUS_CODE_OK, bid, BOARD_ID_BYTE1, BOARD_ID_BYTE2 };
     TxReply(header, r, sizeof(r));
 }
 
@@ -83,8 +83,8 @@ static void Command_HandleGetFwVersion(const PacketHeader *header,
     uint8_t bid = GetBoardID(payload, header->length);
     /* "ACT_BRD v1.0.0" — 15 chars, no null terminator needed */
     uint8_t r[3 + 15];
-    r[0] = STATUS_OK;
-    r[1] = STATUS_OK;
+    r[0] = STATUS_CAT_OK;
+    r[1] = STATUS_CODE_OK;
     r[2] = bid;
     r[3]  = 'A';  r[4]  = 'C';  r[5]  = 'T';  r[6]  = '_';
     r[7]  = 'B';  r[8]  = 'R';  r[9]  = 'D';  r[10] = ' ';
@@ -106,10 +106,11 @@ static void Command_HandleActSet(const PacketHeader *header,
                                  const uint8_t *payload)
 {
     uint8_t bid = GetBoardID(payload, header->length);
-    uint8_t r[5] = { STATUS_OK, STATUS_OK, bid, 0x00, 0x00 };
+    uint8_t r[5] = { STATUS_CAT_OK, STATUS_CODE_OK, bid, 0x00, 0x00 };
 
     if (header->length < 3U) {
-        r[1] = STATUS_ERROR;
+        r[0] = STATUS_CAT_ACTUATOR;
+        r[1] = STATUS_ACT_SHORT_PL;
         TxReply(header, r, 5);
         return;
     }
@@ -118,7 +119,10 @@ static void Command_HandleActSet(const PacketHeader *header,
     bool state = (payload[2] != 0x00U);
 
     Actuator_Status s = Actuator_Set(act_id, state);
-    r[1] = (s == ACT_OK) ? STATUS_OK : STATUS_INVALID_ID;
+    if (s != ACT_OK) {
+        r[0] = STATUS_CAT_ACTUATOR;
+        r[1] = STATUS_ACT_INVALID_ID;
+    }
     r[3] = act_id;
 
     /* Read back actual state from the GPIO */
@@ -140,17 +144,21 @@ static void Command_HandleActGet(const PacketHeader *header,
                                  const uint8_t *payload)
 {
     uint8_t bid = GetBoardID(payload, header->length);
-    uint8_t r[4] = { STATUS_OK, STATUS_OK, bid, 0x00 };
+    uint8_t r[4] = { STATUS_CAT_OK, STATUS_CODE_OK, bid, 0x00 };
 
     if (header->length < 2U) {
-        r[1] = STATUS_ERROR;
+        r[0] = STATUS_CAT_ACTUATOR;
+        r[1] = STATUS_ACT_SHORT_PL;
         TxReply(header, r, 4);
         return;
     }
 
     bool state = false;
     Actuator_Status s = Actuator_Get(payload[1], &state);
-    r[1] = (s == ACT_OK) ? STATUS_OK : STATUS_INVALID_ID;
+    if (s != ACT_OK) {
+        r[0] = STATUS_CAT_ACTUATOR;
+        r[1] = STATUS_ACT_INVALID_ID;
+    }
     r[3] = state ? 0x01U : 0x00U;
     TxReply(header, r, 4);
 }
@@ -164,10 +172,11 @@ static void Command_HandleActSetAll(const PacketHeader *header,
                                     const uint8_t *payload)
 {
     uint8_t bid = GetBoardID(payload, header->length);
-    uint8_t r[3] = { STATUS_OK, STATUS_OK, bid };
+    uint8_t r[3] = { STATUS_CAT_OK, STATUS_CODE_OK, bid };
 
     if (header->length < 5U) {
-        r[1] = STATUS_ERROR;
+        r[0] = STATUS_CAT_ACTUATOR;
+        r[1] = STATUS_ACT_SHORT_PL;
         TxReply(header, r, 3);
         return;
     }
@@ -192,8 +201,8 @@ static void Command_HandleActGetAll(const PacketHeader *header,
     uint8_t bid = GetBoardID(payload, header->length);
     uint32_t mask = Actuator_GetAll();
     uint8_t r[7];
-    r[0] = STATUS_OK;
-    r[1] = STATUS_OK;
+    r[0] = STATUS_CAT_OK;
+    r[1] = STATUS_CODE_OK;
     r[2] = bid;
     r[3] = (uint8_t)(mask & 0xFF);
     r[4] = (uint8_t)((mask >> 8) & 0xFF);
@@ -212,7 +221,7 @@ static void Command_HandleActClearAll(const PacketHeader *header,
 {
     uint8_t bid = GetBoardID(payload, header->length);
     Actuator_ClearAll();
-    uint8_t r[3] = { STATUS_OK, STATUS_OK, bid };
+    uint8_t r[3] = { STATUS_CAT_OK, STATUS_CODE_OK, bid };
     TxReply(header, r, 3);
 }
 
@@ -226,7 +235,7 @@ static void Command_HandleActEnable(const PacketHeader *header,
 {
     uint8_t bid = GetBoardID(payload, header->length);
     Actuator_Enable();
-    uint8_t r[3] = { STATUS_OK, STATUS_OK, bid };
+    uint8_t r[3] = { STATUS_CAT_OK, STATUS_CODE_OK, bid };
     TxReply(header, r, 3);
 }
 
@@ -240,7 +249,7 @@ static void Command_HandleActDisable(const PacketHeader *header,
 {
     uint8_t bid = GetBoardID(payload, header->length);
     Actuator_Disable();
-    uint8_t r[3] = { STATUS_OK, STATUS_OK, bid };
+    uint8_t r[3] = { STATUS_CAT_OK, STATUS_CODE_OK, bid };
     TxReply(header, r, 3);
 }
 
@@ -254,8 +263,8 @@ static void Command_HandleActGetEnable(const PacketHeader *header,
 {
     uint8_t bid = GetBoardID(payload, header->length);
     uint8_t r[4];
-    r[0] = STATUS_OK;
-    r[1] = STATUS_OK;
+    r[0] = STATUS_CAT_OK;
+    r[1] = STATUS_CODE_OK;
     r[2] = bid;
     r[3] = Actuator_IsEnabled() ? 0x01U : 0x00U;
     TxReply(header, r, 4);
