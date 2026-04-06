@@ -15,3 +15,6 @@ Release/
 
 # IDE settings (optional - remove if you want to track these)
 .settings/
+
+# Claude Code local config
+.claude/
