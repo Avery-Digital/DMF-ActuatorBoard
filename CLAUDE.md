@@ -57,7 +57,7 @@ At init, all GPIOs are set HIGH (OFF) and the L293Q enable pin (PD2) is set LOW 
 - ISR handlers live in `stm32h7xx_it.c`; they clear flags and delegate to driver callbacks
 - Command handlers live in `Command.c` with `static` linkage; only `Command_Dispatch()` is public
 - Status bytes use categorized format: `[category][code]`. Success = `0x00 0x00`. Actuator errors = category `0x07`.
-- Actuator IDs are **0-based** (0–27). ID 0 = actuator 1, ID 27 = actuator 28.
+- Actuator IDs are **0-based** (0–27). Logical IDs are mapped to physical actuator pins via `switch_map[]` in `Actuator.c` (groups of 4 per L293Q chip).
 
 ## Pin Assignments Summary
 

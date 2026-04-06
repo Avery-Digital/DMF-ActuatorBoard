@@ -66,6 +66,29 @@ static const PinConfig act_pins[ACT_COUNT] = {
 /* L293Q enable pin — PD2 (pin 57), active HIGH */
 static const PinConfig enable_pin = ACT_PIN(D, 2);
 
+/* ==========================================================================
+ *  SWITCH MAPPING TABLE
+ *
+ *  The user sends a logical mapped ID (0–27).  This table translates
+ *  to the physical actuator pin array index.  Pattern repeats in groups
+ *  of 4:  [first, first+3, first+2, first+1].
+ *
+ *  Mapped ID  →  Actuator (pin index)
+ *     0       →   0  (Act 1)       4  →   4  (Act 5)
+ *     1       →   3  (Act 4)       5  →   7  (Act 8)
+ *     2       →   2  (Act 3)       6  →   6  (Act 7)
+ *     3       →   1  (Act 2)       7  →   5  (Act 6)    ... etc
+ * ========================================================================== */
+static const uint8_t switch_map[ACT_COUNT] = {
+     0,  3,  2,  1,     /* mapped  0– 3 → Act 1, 4, 3, 2  */
+     4,  7,  6,  5,     /* mapped  4– 7 → Act 5, 8, 7, 6  */
+     8, 11, 10,  9,     /* mapped  8–11 → Act 9,12,11,10   */
+    12, 15, 14, 13,     /* mapped 12–15 → Act13,16,15,14   */
+    16, 19, 18, 17,     /* mapped 16–19 → Act17,20,19,18   */
+    20, 23, 22, 21,     /* mapped 20–23 → Act21,24,23,22   */
+    24, 27, 26, 25,     /* mapped 24–27 → Act25,28,27,26   */
+};
+
 /* Track which actuator IDs have valid pin assignments */
 static bool act_valid[ACT_COUNT];
 
@@ -120,15 +143,17 @@ Actuator_Status Actuator_Set(uint8_t act_id, bool state)
         return ACT_ERR_INVALID_ID;
     }
 
-    if (!act_valid[act_id]) {
+    uint8_t hw = switch_map[act_id];
+
+    if (!act_valid[hw]) {
         return ACT_ERR_INVALID_ID;
     }
 
     /* Inverse logic: LOW = ON, HIGH = OFF */
     if (state) {
-        LL_GPIO_ResetOutputPin(act_pins[act_id].port, act_pins[act_id].pin);
+        LL_GPIO_ResetOutputPin(act_pins[hw].port, act_pins[hw].pin);
     } else {
-        LL_GPIO_SetOutputPin(act_pins[act_id].port, act_pins[act_id].pin);
+        LL_GPIO_SetOutputPin(act_pins[hw].port, act_pins[hw].pin);
     }
 
     return ACT_OK;
@@ -140,12 +165,14 @@ Actuator_Status Actuator_Get(uint8_t act_id, bool *state)
         return ACT_ERR_INVALID_ID;
     }
 
-    if (!act_valid[act_id]) {
+    uint8_t hw = switch_map[act_id];
+
+    if (!act_valid[hw]) {
         return ACT_ERR_INVALID_ID;
     }
 
     /* Inverse logic: pin LOW means actuator is ON */
-    *state = !LL_GPIO_IsOutputPinSet(act_pins[act_id].port, act_pins[act_id].pin);
+    *state = !LL_GPIO_IsOutputPinSet(act_pins[hw].port, act_pins[hw].pin);
     return ACT_OK;
 }
 
@@ -156,13 +183,14 @@ Actuator_Status Actuator_Get(uint8_t act_id, bool *state)
 void Actuator_SetAll(uint32_t mask)
 {
     for (uint8_t i = 0; i < ACT_COUNT; i++) {
-        if (!act_valid[i]) continue;
+        uint8_t hw = switch_map[i];
+        if (!act_valid[hw]) continue;
 
         /* Inverse logic: LOW = ON, HIGH = OFF */
         if (mask & (1UL << i)) {
-            LL_GPIO_ResetOutputPin(act_pins[i].port, act_pins[i].pin);
+            LL_GPIO_ResetOutputPin(act_pins[hw].port, act_pins[hw].pin);
         } else {
-            LL_GPIO_SetOutputPin(act_pins[i].port, act_pins[i].pin);
+            LL_GPIO_SetOutputPin(act_pins[hw].port, act_pins[hw].pin);
         }
     }
 }
@@ -172,10 +200,11 @@ uint32_t Actuator_GetAll(void)
     uint32_t mask = 0;
 
     for (uint8_t i = 0; i < ACT_COUNT; i++) {
-        if (!act_valid[i]) continue;
+        uint8_t hw = switch_map[i];
+        if (!act_valid[hw]) continue;
 
         /* Inverse logic: pin LOW means actuator is ON */
-        if (!LL_GPIO_IsOutputPinSet(act_pins[i].port, act_pins[i].pin)) {
+        if (!LL_GPIO_IsOutputPinSet(act_pins[hw].port, act_pins[hw].pin)) {
             mask |= (1UL << i);
         }
     }

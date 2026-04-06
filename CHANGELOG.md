@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.0.3 — 2026-04-06
+
+### Logical-to-Physical Switch Mapping
+- Added `switch_map[28]` lookup table in `Actuator.c`
+- GUI sends logical switch ID (0–27), firmware maps to physical actuator pin
+- Mapping follows groups of 4: `[first, first+3, first+2, first+1]` per L293Q chip
+- All functions (`Set`, `Get`, `SetAll`, `GetAll`) route through the mapping table
+- No changes needed on GUI or motherboard side — mapping is firmware-only
+
+| Logical ID | Physical Act | Logical ID | Physical Act |
+|------------|-------------|------------|-------------|
+| 0 | Act 1 | 14 | Act 15 |
+| 1 | Act 4 | 15 | Act 14 |
+| 2 | Act 3 | 16 | Act 17 |
+| 3 | Act 2 | 17 | Act 20 |
+| 4 | Act 5 | 18 | Act 19 |
+| 5 | Act 8 | 19 | Act 18 |
+| 6 | Act 7 | 20 | Act 21 |
+| 7 | Act 6 | 21 | Act 24 |
+| 8 | Act 9 | 22 | Act 23 |
+| 9 | Act 12 | 23 | Act 22 |
+| 10 | Act 11 | 24 | Act 25 |
+| 11 | Act 10 | 25 | Act 28 |
+| 12 | Act 13 | 26 | Act 27 |
+| 13 | Act 16 | 27 | Act 26 |
+
+---
+
 ## v1.0.2 — 2026-04-06
 
 ### 0-Based Actuator IDs

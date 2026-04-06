@@ -2,7 +2,7 @@
 
 Bare-metal firmware for the DMF (Digital Microfluidics) Actuator Board, built on the **STM32H735RGV6** (TFBGA68 package). Drives 28 actuator outputs through 8x L293Q quad half-bridge ICs, communicating with a motherboard over RS485.
 
-**Firmware version:** 1.0.2 (see [CHANGELOG.md](CHANGELOG.md) for release history)
+**Firmware version:** 1.0.3 (see [CHANGELOG.md](CHANGELOG.md) for release history)
 **Board identity:** `0x41 0x42` ("AB" -- Actuator Board)
 
 ---
