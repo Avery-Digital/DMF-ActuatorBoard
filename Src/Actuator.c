@@ -116,20 +116,19 @@ bool Actuator_IsEnabled(void)
 
 Actuator_Status Actuator_Set(uint8_t act_id, bool state)
 {
-    if (act_id < 1U || act_id > ACT_COUNT) {
+    if (act_id >= ACT_COUNT) {
         return ACT_ERR_INVALID_ID;
     }
 
-    uint8_t idx = act_id - 1U;
-    if (!act_valid[idx]) {
+    if (!act_valid[act_id]) {
         return ACT_ERR_INVALID_ID;
     }
 
     /* Inverse logic: LOW = ON, HIGH = OFF */
     if (state) {
-        LL_GPIO_ResetOutputPin(act_pins[idx].port, act_pins[idx].pin);
+        LL_GPIO_ResetOutputPin(act_pins[act_id].port, act_pins[act_id].pin);
     } else {
-        LL_GPIO_SetOutputPin(act_pins[idx].port, act_pins[idx].pin);
+        LL_GPIO_SetOutputPin(act_pins[act_id].port, act_pins[act_id].pin);
     }
 
     return ACT_OK;
@@ -137,17 +136,16 @@ Actuator_Status Actuator_Set(uint8_t act_id, bool state)
 
 Actuator_Status Actuator_Get(uint8_t act_id, bool *state)
 {
-    if (act_id < 1U || act_id > ACT_COUNT) {
+    if (act_id >= ACT_COUNT) {
         return ACT_ERR_INVALID_ID;
     }
 
-    uint8_t idx = act_id - 1U;
-    if (!act_valid[idx]) {
+    if (!act_valid[act_id]) {
         return ACT_ERR_INVALID_ID;
     }
 
     /* Inverse logic: pin LOW means actuator is ON */
-    *state = !LL_GPIO_IsOutputPinSet(act_pins[idx].port, act_pins[idx].pin);
+    *state = !LL_GPIO_IsOutputPinSet(act_pins[act_id].port, act_pins[act_id].pin);
     return ACT_OK;
 }
 

@@ -2,7 +2,7 @@
 
 Bare-metal firmware for the DMF (Digital Microfluidics) Actuator Board, built on the **STM32H735RGV6** (TFBGA68 package). Drives 28 actuator outputs through 8x L293Q quad half-bridge ICs, communicating with a motherboard over RS485.
 
-**Firmware version:** 1.0.1 (see [CHANGELOG.md](CHANGELOG.md) for release history)
+**Firmware version:** 1.0.2 (see [CHANGELOG.md](CHANGELOG.md) for release history)
 **Board identity:** `0x41 0x42` ("AB" -- Actuator Board)
 
 ---
@@ -340,14 +340,14 @@ Sets PD2 LOW → all L293Q drivers disabled.
 
 ```
 → [02] [m1] [m2] [00] [03] [0F] [00] [bid] [act_id] [state] [CRC_hi] [CRC_lo] [7E]
-                   len=3              boardID  1-28    0x01=ON, 0x00=OFF
+                   len=3              boardID  0-27    0x01=ON, 0x00=OFF
 
 ← [02] [m1] [m2] [00] [05] [0F] [00] [00] [s2] [bid] [act_id] [actual] [CRC_hi] [CRC_lo] [7E]
                    len=5               s1   s2   bid   act_id   actual GPIO state
 ```
 
 `actual` is read back from the GPIO after setting — confirms the physical state.
-`s2` = `0x02` (INVALID_ID) if `act_id` is out of range (not 1-28) or unassigned. In that case `s1` = `0x01` (STATUS_CAT_ACTUATOR).
+`s2` = `0x02` (INVALID_ID) if `act_id` is out of range (not 0-27) or unassigned. In that case `s1` = `0x01` (STATUS_CAT_ACTUATOR).
 
 ---
 
@@ -355,7 +355,7 @@ Sets PD2 LOW → all L293Q drivers disabled.
 
 ```
 → [02] [m1] [m2] [00] [02] [0F] [01] [bid] [act_id] [CRC_hi] [CRC_lo] [7E]
-                   len=2              boardID  1-28
+                   len=2              boardID  0-27
 
 ← [02] [m1] [m2] [00] [04] [0F] [01] [00] [s2] [bid] [state] [CRC_hi] [CRC_lo] [7E]
                    len=4               s1   s2   bid   0x01=ON, 0x00=OFF

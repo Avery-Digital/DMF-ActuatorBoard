@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.2 — 2026-04-06
+
+### 0-Based Actuator IDs
+- Actuator IDs are now 0-based (0–27) instead of 1-based (1–28)
+- Sending `0x00` activates actuator 1, `0x1B` (27) activates actuator 28
+- `Actuator_Set()` and `Actuator_Get()` accept 0-based index directly (no offset)
+- GUI sends `buttonNumber - 1`, firmware uses ID as direct array index
+
+---
+
 ## v1.0.1 — 2026-04-03
 
 ### Unified Status Bytes
@@ -31,7 +41,7 @@
 |---------|---------|---------|
 | 0x00 | 0x00 | Success |
 | 0x01 | 0x01 | Payload too short (general) |
-| 0x07 | 0x01 | Invalid actuator ID (not 1-28) |
+| 0x07 | 0x01 | Invalid actuator ID (not 0-27) |
 | 0x07 | 0x02 | Invalid actuator value |
 | 0x07 | 0x03 | Payload too short for command |
 

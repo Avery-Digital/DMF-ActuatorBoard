@@ -6,7 +6,7 @@
  *          8x L293Q quad half-bridge drivers, all enables tied to PD2.
  *          Each actuator output is driven by a single GPIO pin (HIGH = on).
  *
- *          Actuator numbering: 1–28 (array index = actuator_id - 1)
+ *          Actuator numbering: 0–27 (0-based, act_id = array index)
  *******************************************************************************
  * Copyright (c) 2026
  * All rights reserved.
@@ -61,7 +61,7 @@ bool Actuator_IsEnabled(void);
 
 /**
  * @brief  Set a single actuator ON or OFF.
- * @param  act_id  Actuator number (1–28)
+ * @param  act_id  Actuator index (0–27)
  * @param  state   true = ON, false = OFF
  * @return ACT_OK or ACT_ERR_INVALID_ID
  */
@@ -69,7 +69,7 @@ Actuator_Status Actuator_Set(uint8_t act_id, bool state);
 
 /**
  * @brief  Get the current state of a single actuator.
- * @param  act_id  Actuator number (1–28)
+ * @param  act_id  Actuator index (0–27)
  * @param  state   Output: true = ON, false = OFF
  * @return ACT_OK or ACT_ERR_INVALID_ID
  */

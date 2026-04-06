@@ -52,7 +52,7 @@ extern "C" {
 /* Firmware version — update on each release */
 #define FW_VERSION_MAJOR    1U
 #define FW_VERSION_MINOR    0U
-#define FW_VERSION_PATCH    1U
+#define FW_VERSION_PATCH    2U
 
 /* Board identity */
 #define BOARD_ID_BYTE1      0x41U   /* 'A' = Actuator Board */
