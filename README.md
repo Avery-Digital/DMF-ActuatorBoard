@@ -2,7 +2,7 @@
 
 Bare-metal firmware for the DMF (Digital Microfluidics) Actuator Board, built on the **STM32H735RGV6** (TFBGA68 package). Drives 28 actuator outputs through 8x L293Q quad half-bridge ICs, communicating with a motherboard over RS485.
 
-**Firmware version:** 1.0.3 (see [CHANGELOG.md](CHANGELOG.md) for release history)
+**Firmware version:** 1.0.4 (see [CHANGELOG.md](CHANGELOG.md) for release history)
 **Board identity:** `0x41 0x42` ("AB" -- Actuator Board)
 
 ---
@@ -219,8 +219,8 @@ All commands use the 16-bit code `CMD_CODE(cmd1, cmd2) = (cmd1 << 8) | cmd2`.
 |---------------------|----------|----------------------------------|--------------------------------------------------|
 | Set Single Actuator | `0x0F00` | `[boardID] [act_id] [state]`     | `[s1] [s2] [boardID] [act_id] [actual_state]`   |
 | Get Single Actuator | `0x0F01` | `[boardID] [act_id]`             | `[s1] [s2] [boardID] [state]`                    |
-| Set All Actuators   | `0x0F02` | `[boardID] [mask_LE (4 bytes)]`  | `[s1] [s2] [boardID]`                            |
-| Get All Actuators   | `0x0F03` | `[boardID]`                      | `[s1] [s2] [boardID] [mask_LE (4 bytes)]`        |
+| Set All Actuators   | `0x0F02` | `[boardID] [mask_BE (4 bytes)]`  | `[s1] [s2] [boardID]`                            |
+| Get All Actuators   | `0x0F03` | `[boardID]`                      | `[s1] [s2] [boardID] [mask_BE (4 bytes)]`        |
 | Clear All Actuators | `0x0F04` | `[boardID]`                      | `[s1] [s2] [boardID]`                            |
 | Enable Drivers      | `0x0F10` | `[boardID]`                      | `[s1] [s2] [boardID]`                            |
 | Disable Drivers     | `0x0F11` | `[boardID]`                      | `[s1] [s2] [boardID]`                            |
@@ -229,7 +229,7 @@ All commands use the 16-bit code `CMD_CODE(cmd1, cmd2) = (cmd1 << 8) | cmd2`.
 **Field details:**
 - `act_id`: Actuator number 1--28
 - `state` / `actual_state` / `enabled`: `0x01` = ON/enabled, `0x00` = OFF/disabled
-- `mask_LE`: 32-bit little-endian bitmask; bit 0 = actuator 1, bit 27 = actuator 28
+- `mask_BE`: 32-bit big-endian bitmask; bit 0 = actuator 0, bit 27 = actuator 27. MSB sent first.
 - `s1`, `s2`: Status bytes (see below)
 
 **Response status codes:**
@@ -366,15 +366,15 @@ Sets PD2 LOW → all L293Q drivers disabled.
 #### CMD_ACT_SET_ALL (0x0F02) — Set All Actuators from Bitmask
 
 ```
-→ [02] [m1] [m2] [00] [05] [0F] [02] [bid] [b0] [b1] [b2] [b3] [CRC_hi] [CRC_lo] [7E]
-                   len=5              boardID  32-bit LE bitmask
+→ [02] [m1] [m2] [00] [05] [0F] [02] [bid] [b3] [b2] [b1] [b0] [CRC_hi] [CRC_lo] [7E]
+                   len=5              boardID  32-bit BE bitmask (MSB first)
 
 ← [02] [m1] [m2] [00] [03] [0F] [02] [00] [00] [bid] [CRC_hi] [CRC_lo] [7E]
                    len=3               s1   s2   bid
 ```
 
-Bitmask is little-endian: bit 0 of b0 = actuator 1, bit 3 of b3 = actuator 28.
-Example: turn on actuators 1, 3, 5 → mask = 0x00000015 → b0=0x15, b1=0x00, b2=0x00, b3=0x00.
+Bitmask is big-endian: bit 0 of b0 = actuator 0, bit 3 of b3 = actuator 27. MSB sent first.
+Example: turn on actuators 0, 2, 4 → mask = 0x00000015 → b3=0x00, b2=0x00, b1=0x00, b0=0x15.
 
 ---
 
@@ -383,8 +383,8 @@ Example: turn on actuators 1, 3, 5 → mask = 0x00000015 → b0=0x15, b1=0x00, b
 ```
 → [02] [m1] [m2] [00] [01] [0F] [03] [bid] [CRC_hi] [CRC_lo] [7E]
 
-← [02] [m1] [m2] [00] [07] [0F] [03] [00] [00] [bid] [b0] [b1] [b2] [b3] [CRC_hi] [CRC_lo] [7E]
-                   len=7               s1   s2   bid   32-bit LE bitmask
+← [02] [m1] [m2] [00] [07] [0F] [03] [00] [00] [bid] [b3] [b2] [b1] [b0] [CRC_hi] [CRC_lo] [7E]
+                   len=7               s1   s2   bid   32-bit BE bitmask (MSB first)
 ```
 
 Same bitmask format as SET_ALL.

@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.0.4 — 2026-04-08
+
+### Big-Endian Bitmask for SET_ALL / GET_ALL
+- CMD_ACT_SET_ALL (0x0F02) and CMD_ACT_GET_ALL (0x0F03) now use big-endian byte order for the 4-byte bitmask
+- Previously little-endian: `[b0][b1][b2][b3]` (LSB first)
+- Now big-endian: `[b3][b2][b1][b0]` (MSB first)
+- Example: mask `0x00000009` (actuators 0 and 3) → sent as `[0x00][0x00][0x00][0x09]`
+- GUI HandleActGetAllResponse updated to match
+
+---
+
 ## v1.0.3 — 2026-04-06
 
 ### Logical-to-Physical Switch Mapping

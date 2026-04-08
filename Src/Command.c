@@ -165,7 +165,7 @@ static void Command_HandleActGet(const PacketHeader *header,
 
 /* ==========================================================================
  *  CMD_ACT_SET_ALL (0x0F02)
- *  Payload in:  [boardID] [mask (4 bytes, LE)] — bit 0 = act 1, bit 27 = act 28
+ *  Payload in:  [boardID] [mask (4 bytes, BE)] — bit 0 = act 0, bit 27 = act 27
  *  Response:    [status1] [status2] [boardID]
  * ========================================================================== */
 static void Command_HandleActSetAll(const PacketHeader *header,
@@ -181,10 +181,10 @@ static void Command_HandleActSetAll(const PacketHeader *header,
         return;
     }
 
-    uint32_t mask = (uint32_t)payload[1]
-                  | ((uint32_t)payload[2] << 8)
-                  | ((uint32_t)payload[3] << 16)
-                  | ((uint32_t)payload[4] << 24);
+    uint32_t mask = ((uint32_t)payload[1] << 24)
+                  | ((uint32_t)payload[2] << 16)
+                  | ((uint32_t)payload[3] << 8)
+                  | (uint32_t)payload[4];
 
     Actuator_SetAll(mask);
     TxReply(header, r, 3);
@@ -193,7 +193,7 @@ static void Command_HandleActSetAll(const PacketHeader *header,
 /* ==========================================================================
  *  CMD_ACT_GET_ALL (0x0F03)
  *  Payload in:  [boardID]
- *  Response:    [status1] [status2] [boardID] [mask (4 bytes, LE)]
+ *  Response:    [status1] [status2] [boardID] [mask (4 bytes, BE)]
  * ========================================================================== */
 static void Command_HandleActGetAll(const PacketHeader *header,
                                     const uint8_t *payload)
@@ -204,10 +204,10 @@ static void Command_HandleActGetAll(const PacketHeader *header,
     r[0] = STATUS_CAT_OK;
     r[1] = STATUS_CODE_OK;
     r[2] = bid;
-    r[3] = (uint8_t)(mask & 0xFF);
-    r[4] = (uint8_t)((mask >> 8) & 0xFF);
-    r[5] = (uint8_t)((mask >> 16) & 0xFF);
-    r[6] = (uint8_t)((mask >> 24) & 0xFF);
+    r[3] = (uint8_t)((mask >> 24) & 0xFF);
+    r[4] = (uint8_t)((mask >> 16) & 0xFF);
+    r[5] = (uint8_t)((mask >> 8) & 0xFF);
+    r[6] = (uint8_t)(mask & 0xFF);
     TxReply(header, r, 7);
 }
 
