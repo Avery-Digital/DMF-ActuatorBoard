@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.0.0 — 2026-04-20
+
+### Unified big-endian wire format (refactor only — no behavior change)
+
+- Added `Inc/endian_be.h` shared helpers (`be16_pack/unpack`, `be32_pack/unpack`).
+- `CMD_ACT_SET_ALL` / `CMD_ACT_GET_ALL` 32-bit bitmask pack/unpack now use `be32_pack`/`be32_unpack`. The wire format was already big-endian in v1.0.4 — this is a code cleanup, not a protocol change.
+- Firmware version string: `"ACT_BRD v2.0.0"`.
+- Paired release: every DMF firmware image and the GUI moves to v2.0.0 simultaneously. This bump is a lockstep version, not a behavior change on this board specifically.
+
+---
+
 ## v1.0.4 — 2026-04-08
 
 ### Big-Endian Bitmask for SET_ALL / GET_ALL

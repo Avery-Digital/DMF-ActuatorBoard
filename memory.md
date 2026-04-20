@@ -1,8 +1,8 @@
 # DMF Actuator Board — Project State (Portable Context)
 
-Last updated: 2026-04-13
+Last updated: 2026-04-20
 
-## Current Firmware Version: v1.0.4
+## Current Firmware Version: v2.0.0
 
 ## Hardware
 - **MCU:** STM32H735RGV6 (TFBGA68, Cortex-M7)

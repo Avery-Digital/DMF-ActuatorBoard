@@ -21,6 +21,7 @@
  ******************************************************************************/
 
 #include "Command.h"
+#include "endian_be.h"
 #include "Actuator.h"
 #include "main.h"
 #include <string.h>
@@ -81,7 +82,7 @@ static void Command_HandleGetFwVersion(const PacketHeader *header,
                                        const uint8_t *payload)
 {
     uint8_t bid = GetBoardID(payload, header->length);
-    /* "ACT_BRD v1.0.0" — 15 chars, no null terminator needed */
+    /* "ACT_BRD vX.Y.Z" — 14 chars + 1 digit patch, version built from FW_VERSION_* defines */
     uint8_t r[3 + 15];
     r[0] = STATUS_CAT_OK;
     r[1] = STATUS_CODE_OK;
@@ -181,10 +182,7 @@ static void Command_HandleActSetAll(const PacketHeader *header,
         return;
     }
 
-    uint32_t mask = ((uint32_t)payload[1] << 24)
-                  | ((uint32_t)payload[2] << 16)
-                  | ((uint32_t)payload[3] << 8)
-                  | (uint32_t)payload[4];
+    uint32_t mask = be32_unpack(&payload[1]);
 
     Actuator_SetAll(mask);
     TxReply(header, r, 3);
@@ -204,10 +202,7 @@ static void Command_HandleActGetAll(const PacketHeader *header,
     r[0] = STATUS_CAT_OK;
     r[1] = STATUS_CODE_OK;
     r[2] = bid;
-    r[3] = (uint8_t)((mask >> 24) & 0xFF);
-    r[4] = (uint8_t)((mask >> 16) & 0xFF);
-    r[5] = (uint8_t)((mask >> 8) & 0xFF);
-    r[6] = (uint8_t)(mask & 0xFF);
+    be32_pack(&r[3], mask);
     TxReply(header, r, 7);
 }
 

@@ -50,9 +50,9 @@ extern "C" {
 #define CMD_GET_FW_VERSION  CMD_CODE(0x0F, 0x98)    /**< Get firmware version    */
 
 /* Firmware version — update on each release */
-#define FW_VERSION_MAJOR    1U
+#define FW_VERSION_MAJOR    2U
 #define FW_VERSION_MINOR    0U
-#define FW_VERSION_PATCH    4U
+#define FW_VERSION_PATCH    0U
 
 /* Board identity */
 #define BOARD_ID_BYTE1      0x41U   /* 'A' = Actuator Board */

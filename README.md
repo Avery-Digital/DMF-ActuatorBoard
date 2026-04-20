@@ -2,7 +2,7 @@
 
 Bare-metal firmware for the DMF (Digital Microfluidics) Actuator Board, built on the **STM32H735RGV6** (TFBGA68 package). Drives 28 actuator outputs through 8x L293Q quad half-bridge ICs, communicating with a motherboard over RS485.
 
-**Firmware version:** 1.0.4 (see [CHANGELOG.md](CHANGELOG.md) for release history)
+**Firmware version:** 2.0.0 (see [CHANGELOG.md](CHANGELOG.md) for release history)
 **Board identity:** `0x41 0x42` ("AB" -- Actuator Board)
 
 ---
@@ -211,7 +211,7 @@ All commands use the 16-bit code `CMD_CODE(cmd1, cmd2) = (cmd1 << 8) | cmd2`.
 |-------------------|----------|------------------------|------------------------------------------|
 | Ping              | `0xDEAD` | (none)                 | `DE AD BE EF 01 02 03 04` (8 bytes)     |
 | Get Board Type    | `0x0B99` | `[boardID]`            | `[s1] [s2] [boardID] [0x41] [0x42]`     |
-| Get FW Version    | `0x0F98` | `[boardID]`            | `[s1] [s2] [boardID] "ACT_BRD v1.0.1"`  |
+| Get FW Version    | `0x0F98` | `[boardID]`            | `[s1] [s2] [boardID] "ACT_BRD v2.0.0"`  |
 
 ### Actuator Commands (range 0x0F00 -- 0x0FFF)
 
@@ -292,8 +292,8 @@ Board identity is `0x41 0x42` ("AB" = Actuator Board).
 ```
 → [02] [m1] [m2] [00] [01] [0F] [98] [bid] [CRC_hi] [CRC_lo] [7E]
 
-← [02] [m1] [m2] [00] [12] [0F] [98] [00] [00] [bid] [41 43 54 5F 42 52 44 20 76 31 2E 30 2E 31] [CRC] [7E]
-                   len=18              s1   s2   bid   "ACT_BRD v1.0.1" (15 ASCII bytes)
+← [02] [m1] [m2] [00] [12] [0F] [98] [00] [00] [bid] [41 43 54 5F 42 52 44 20 76 32 2E 30 2E 30] [CRC] [7E]
+                   len=18              s1   s2   bid   "ACT_BRD v2.0.0" (15 ASCII bytes)
 ```
 
 ---
