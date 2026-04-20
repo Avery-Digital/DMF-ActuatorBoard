@@ -82,8 +82,8 @@ static void Command_HandleGetFwVersion(const PacketHeader *header,
                                        const uint8_t *payload)
 {
     uint8_t bid = GetBoardID(payload, header->length);
-    /* "ACT_BRD vX.Y.Z" — 14 chars + 1 digit patch, version built from FW_VERSION_* defines */
-    uint8_t r[3 + 15];
+    /* "ACT_BRD vX.Y.Z" — 14 chars, version built from FW_VERSION_* defines */
+    uint8_t r[3 + 14];
     r[0] = STATUS_CAT_OK;
     r[1] = STATUS_CODE_OK;
     r[2] = bid;
